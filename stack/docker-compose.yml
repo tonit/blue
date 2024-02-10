@@ -632,7 +632,7 @@ services:
     restart: unless-stopped
     ports:
       - "${JAEGER_SERVICE_PORT}"         # Jaeger UI
-      - "4317"                           # OTLP gRPC default port
+      - "4317:4317"                           # OTLP gRPC default port
     environment:
       - METRICS_STORAGE_TYPE=prometheus
     logging: *logging

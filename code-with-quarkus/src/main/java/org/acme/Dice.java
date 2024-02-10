@@ -4,45 +4,24 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-@Path("/hello")
-public class GreetingResource {
-
-    @Inject
-    OpenTelemetry otel;
-
+public class Dice {
+    private int min;
+    private int max;
     private Tracer tracer;
 
-    GreetingResource() {
-        tracer = otel.getTracer("instrumentation-scope-name", "instrumentation-scope-version");
+    public Dice(int min, int max, OpenTelemetry openTelemetry) {
+        this.min = min;
+        this.max = max;
+        this.tracer = openTelemetry.getTracer(Dice.class.getName(), "0.1.0");
     }
 
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        //Tracer tracer = otel.getTracer("instrumentation-scope-name", "instrumentation-scope-version");
-
-        Span span = tracer.spanBuilder("rollTheDice").startSpan();
-
-        // Make the span the current span
-        try (Scope scope = span.makeCurrent()) {
-            return "Hello you";
-        } catch(Throwable t) {
-            span.recordException(t);
-            throw t;
-        } finally {
-            span.end();
-        }
+    public Dice(int min, int max) {
+        this(min, max, OpenTelemetry.noop());
     }
 
     public List<Integer> rollTheDice(int rolls) {
