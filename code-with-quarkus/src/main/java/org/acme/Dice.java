@@ -5,8 +5,13 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Dice {
@@ -25,7 +30,10 @@ public class Dice {
     }
 
     public List<Integer> rollTheDice(int rolls) {
-        Span parentSpan = tracer.spanBuilder("parent").startSpan();
+        Span parentSpan = tracer.spanBuilder("parent")
+                .setAttribute("rolls", rolls)
+                //.setParent(Context.current().with())
+                .startSpan();
         List<Integer> results = new ArrayList<Integer>();
         try {
             for (int i = 0; i < rolls; i++) {
@@ -42,6 +50,8 @@ public class Dice {
                 .setParent(Context.current().with(parentSpan))
                 .startSpan();
         try {
+            // simulate some work
+
             return ThreadLocalRandom.current().nextInt(this.min, this.max + 1);
         } finally {
             childSpan.end();

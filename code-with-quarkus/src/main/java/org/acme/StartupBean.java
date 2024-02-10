@@ -20,9 +20,11 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.semconv.ResourceAttributes;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Scope;
 
 public class StartupBean {
 
@@ -35,8 +37,15 @@ public class StartupBean {
 
     }
 
+    /**
+     * All in Code configuration of OpenTelemetry.
+     *
+     * @return single instance of OpenTelemetry
+     */
+    @ApplicationScoped
     @Produces
     public OpenTelemetry openTelemetry() {
+        System.out.println("Creating OpenTelemetry instance...");
         Resource resource = Resource.getDefault().toBuilder().put(ResourceAttributes.SERVICE_NAME, "quarkus-server").put(ResourceAttributes.SERVICE_VERSION, "0.1.0").build();
 
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()

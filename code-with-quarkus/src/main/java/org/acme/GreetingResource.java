@@ -5,35 +5,38 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.CompletableFuture;
 
 @Path("/hello")
 public class GreetingResource {
 
-    @Inject
     OpenTelemetry otel;
 
     private Tracer tracer;
 
-    GreetingResource() {
+    GreetingResource(OpenTelemetry otel) {
+        this.otel = otel;
         tracer = otel.getTracer("instrumentation-scope-name", "instrumentation-scope-version");
     }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        //Tracer tracer = otel.getTracer("instrumentation-scope-name", "instrumentation-scope-version");
-
         Span span = tracer.spanBuilder("rollTheDice").startSpan();
 
+        callEndpoint(span);
+        new Dice(1,6,otel).rollTheDice(100);
         // Make the span the current span
         try (Scope scope = span.makeCurrent()) {
             return "Hello you";
@@ -45,27 +48,34 @@ public class GreetingResource {
         }
     }
 
-    public List<Integer> rollTheDice(int rolls) {
-        Span parentSpan = tracer.spanBuilder("parent").startSpan();
-        List<Integer> results = new ArrayList<Integer>();
-        try {
-            for (int i = 0; i < rolls; i++) {
-                results.add(this.rollOnce(parentSpan));
-            }
-            return results;
-        } finally {
-            parentSpan.end();
+    public void callEndpoint(Span parent) {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://example.com"))
+                .build();
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            Span span = tracer.spanBuilder("call-endpoint-" + i)
+                    .setParent(Context.current().with(parent))
+                    .startSpan();
+            futures.add(client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        System.out.println("Response code: " + response.statusCode());
+                        return response;
+                    })
+                    .thenAccept(response -> span.end())
+                    .exceptionally(e -> {
+                        System.out.println("Error: " + e.getMessage());
+                        span.recordException(e);
+                        span.end();
+                        return null;
+                    }));
         }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private int rollOnce(Span parentSpan) {
-        Span childSpan = tracer.spanBuilder("child")
-                .setParent(Context.current().with(parentSpan))
-                .startSpan();
-        try {
-            return ThreadLocalRandom.current().nextInt(this.min, this.max + 1);
-        } finally {
-            childSpan.end();
-        }
-    }
+
 }
