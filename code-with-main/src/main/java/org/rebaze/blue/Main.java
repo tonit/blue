@@ -49,6 +49,8 @@ public class Main
         } finally {
             span.end();
         }
+
+        Thread.currentThread().join();
     }
 
     public void callEndpoint(Tracer tracer, Span parent) {
@@ -101,7 +103,7 @@ public class Main
 
     public static OpenTelemetry openTelemetry() {
         System.out.println("Creating OpenTelemetry instance...");
-        Resource resource = Resource.getDefault().toBuilder().put(ResourceAttributes.SERVICE_NAME, "quarkus-server").put(ResourceAttributes.SERVICE_VERSION, "0.1.0").build();
+        Resource resource = Resource.getDefault().toBuilder().put(ResourceAttributes.SERVICE_NAME, "main").put(ResourceAttributes.SERVICE_VERSION, "0.1.0").build();
 
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
                 .addSpanProcessor(SimpleSpanProcessor.create(LoggingSpanExporter.create()))
