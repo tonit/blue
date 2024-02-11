@@ -1,8 +1,5 @@
 package org.rebaze.blue;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.Span;
@@ -26,9 +23,6 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.semconv.ResourceAttributes;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -82,24 +76,6 @@ public class Main
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private static void server() throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
-        OpenTelemetry openTelemetry = openTelemetry();
-
-        server.createContext("/ping", new HttpHandler() {
-            @Override
-            public void handle(HttpExchange exchange) throws IOException {
-                String response = "pong";
-                exchange.sendResponseHeaders(200, response.length());
-                OutputStream os = exchange.getResponseBody();
-                os.write(response.getBytes());
-                os.close();
-            }
-        });
-
-        server.setExecutor(null); // creates a default executor
-        server.start();
-    }
 
     public static OpenTelemetry openTelemetry() {
         System.out.println("Creating OpenTelemetry instance...");
