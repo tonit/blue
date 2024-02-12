@@ -19,7 +19,7 @@
     <repository>
       <id>github</id>
       <name>GitHub Packages</name>
-      <url>https://maven.pkg.github.com/tonit/otel-osgi</url>
+      <url>https://maven.pkg.github.com/tonit/blue</url>
     </repository>
   </distributionManagement>
 
